@@ -1,7 +1,15 @@
 venv/
 .env
 __pycache__/
+*.pyc
 
-# Generated outputs - not needed in repo
+# Generated outputs — re-created by running the pipeline
 outputs/transcripts/
 outputs/accounts/
+
+# Raw audio/recording files — users supply these locally
+*.mp3
+*.wav
+*.m4a
+*.ogg
+*.flac

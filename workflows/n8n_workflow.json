@@ -1,0 +1,136 @@
+{
+  "name": "Clara AI — Demo & Onboarding Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-node",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /app && python scripts/run_pipeline.py 2>&1"
+      },
+      "id": "run-pipeline",
+      "name": "Run Pipeline (All Accounts)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "notes": "Runs run_pipeline.py which reads from dataset/demo_calls and dataset/onboarding_calls, produces v1 and v2 outputs, creates Asana tasks, and stores JSON under outputs/accounts/<account_id>/"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.stdout }}",
+              "operation": "contains",
+              "value2": "❌"
+            }
+          ]
+        }
+      },
+      "id": "check-errors",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "FAILED"
+            },
+            {
+              "name": "output",
+              "value": "={{ $json.stdout }}"
+            }
+          ]
+        }
+      },
+      "id": "failure-branch",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1000, 200],
+      "notes": "In production: route this to Slack, email, or a monitoring webhook."
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "output",
+              "value": "={{ $json.stdout }}"
+            }
+          ]
+        }
+      },
+      "id": "success-branch",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1000, 420],
+      "notes": "Pipeline completed. Outputs stored in outputs/accounts/. Asana tasks created for flagged unknowns."
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Pipeline (All Accounts)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Pipeline (All Accounts)": {
+      "main": [
+        [
+          {
+            "node": "Check for Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Errors": {
+      "main": [
+        [
+          {
+            "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "instanceId": "clara-ai-pipeline-v1"
+  },
+  "settings": {
+    "notes": "Import this into n8n (self-hosted via Docker). The Execute Command node requires Python and project dependencies installed in the n8n environment. Set GROQ_API_KEY and ASANA_PAT as n8n environment variables or pass via .env file mounted into the container."
+  }
+}
