@@ -30,33 +30,4 @@ class AgentSpecResponse(BaseModel):
     data: dict[str, Any]
 
 
-class MockRetellAgentRequest(BaseModel):
-    agent_name: str
-    system_prompt: str
-    voice_style: str = "professional, warm, concise"
-    version: str = "v1"
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "agent_name": "BlueSky Electrical AI Assistant",
-                "system_prompt": "You are a professional call-handling assistant for BlueSky Electrical...",
-                "voice_style": "professional, warm, concise",
-                "version": "v2"
-            }
-        }
-
-
-class MockRetellAgentResponse(BaseModel):
-    agent_id: str
-    agent_name: str
-    status: str
-    voice_id: str
-    language: str
-    webhook_url: str | None
-    note: str
-
-
-class PipelineRunResponse(BaseModel):
-    status: str
-    message: str

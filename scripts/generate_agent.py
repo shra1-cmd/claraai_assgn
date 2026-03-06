@@ -54,7 +54,7 @@ Never mention function calls, tool names, or internal system names to the caller
 1. GREET:  "Thank you for calling {company}, this is Clara. How can I help you today?"
 2. LISTEN: Let the caller describe their issue fully before responding.
 3. TRIAGE: Determine if the issue matches an emergency (see Emergency Definition below).
-4. IF EMERGENCY → follow Emergency Flow.
+4. IF EMERGENCY -> follow Emergency Flow.
 5. IF NON-EMERGENCY:
    a. Collect caller's full name and best callback number.
    b. Ask only the clarifying questions needed for routing — no extras.
@@ -70,8 +70,8 @@ Never mention function calls, tool names, or internal system names to the caller
 3. IF NOT EMERGENCY:
    - "I'll note your message and our team will follow up next business day."
    - Collect name and phone number.
-   - "Is there anything else?" → Close.
-4. IF EMERGENCY → follow Emergency Flow.
+   - "Is there anything else?" -> Close.
+4. IF EMERGENCY -> follow Emergency Flow.
 
 ---
 ## EMERGENCY DEFINITION
@@ -145,165 +145,7 @@ Never mention function calls, tool names, or internal system names to the caller
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(agent_spec, f, indent=2)
 
-    # Auto-generate the per-account manual import guide alongside the spec
-    guide_path = str(Path(output_path).parent / "retell_import_guide.md")
-    _generate_import_guide(agent_spec, guide_path, company, version, hours_str,
-                           address, services, emergency, routing, transfer_r)
-
-    print(f"  Agent spec ({version}) saved → {output_path}")
-    print(f"  Import guide saved         → {guide_path}")
-
-
-def _generate_import_guide(spec: dict, guide_path: str, company: str, version: str,
-                            hours_str: str, address: str, services: list,
-                            emergency: list, routing: str, transfer_r) -> None:
-    """Write a pre-filled Retell manual import guide for this specific account."""
-
-    services_md  = "\n".join(f"  - {s}" for s in services)  or "  - General services"
-    emergency_md = "\n".join(f"  - {e}" for e in emergency) or "  - Active emergency situation"
-    fallback     = spec.get("fallback_protocol", {}).get("script", "Call back within 30 minutes.")
-    transfer_fail = spec.get("call_transfer_protocol", {}).get("transfer_fail_script", "")
-    voice_style  = spec.get("voice_style", "professional, warm, concise")
-    agent_name   = spec.get("agent_name", f"{company} AI Assistant")
-
-    guide = f"""# Retell Manual Import Guide — {agent_name} ({version})
-
-> Pre-filled checklist for creating this agent in the Retell dashboard.
-> Open this file alongside `agent_spec.json` and follow each step.
-
----
-
-## Account Summary
-
-| Field | Value |
-|---|---|
-| Agent Name | `{agent_name}` |
-| Version | `{version}` |
-| Company | `{company}` |
-| Address | `{address}` |
-| Business Hours | `{hours_str}` |
-
----
-
-## Step 1 — Create the Agent
-
-1. Go to [app.retellai.com](https://app.retellai.com)
-2. Click **Create Agent** → **Blank Agent**
-3. Set **Agent Name** to: `{agent_name}`
-
----
-
-## Step 2 — Choose Voice
-
-- **Voice style required:** `{voice_style}`
-- Recommended: **ElevenLabs — Rachel** or **Azure — Jenny Neural**
-- Any professional-sounding voice works if the above are unavailable
-
----
-
-## Step 3 — Set Greeting Message
-
-Paste this as the **First Message / Greeting**:
-
-```
-Thank you for calling {company}, this is Clara. How can I help you today?
-```
-
----
-
-## Step 4 — Paste System Prompt
-
-Copy the entire `system_prompt` value from `agent_spec.json` and paste it into the **System Prompt** field.
-
-The prompt already contains:
-- Office hours call flow (greet → triage → route → close)
-- After-hours call flow (emergency vs. non-emergency)
-- Emergency definition and transfer flow
-- Transfer-fail fallback script
-- Strict hygiene rules
-
----
-
-## Step 5 — Configure Call Transfer Tool
-
-Add a **Call Transfer** tool in Retell and configure it as follows:
-
-| Setting | Value |
-|---|---|
-| Tool name (internal) | `connect_emergency` |
-| Trigger | Emergency confirmed by caller |
-| Primary route | {routing} |
-| Transfer timeout/retry | {transfer_r} |
-| On transfer failure | Say: _{transfer_fail}_ |
-
-> The system prompt already tells the agent never to mention the tool name to callers.
-
----
-
-## Step 6 — Set Key Variables
-
-If Retell supports custom variables, set these:
-
-| Variable | Value |
-|---|---|
-| `company_name` | `{company}` |
-| `office_address` | `{address}` |
-| `business_hours` | `{hours_str}` |
-
-**Services offered:**
-{services_md}
-
-**Emergency triggers:**
-{emergency_md}
-
----
-
-## Step 7 — Configure Fallback
-
-Set the **Fallback / No-Transfer Script** to:
-
-```
-{fallback}
-```
-
----
-
-## Step 8 — Test Before Publishing
-
-Run these scenario tests in Retell's test console:
-
-| Scenario | Expected Agent Behaviour |
-|---|---|
-| Call during business hours, non-emergency | Greet → collect name + number → schedule follow-up → close |
-| Mention an emergency keyword | Confirm urgency → collect name/number/address → transfer |
-| Transfer fails | Deliver fallback script → promise 30-min callback |
-| Call after hours, non-emergency | State hours → take message → promise next-day callback |
-| Call after hours, emergency | Confirm → collect info → transfer → fallback if needed |
-
----
-
-## Step 9 — Publish
-
-Click **Publish** or **Deploy** and save the Agent ID for API use later.
-
----
-
-## Upgrading to {('v2' if version == 'v1' else 'next version')}
-
-When onboarding updates arrive:
-
-1. Open `changes.md` in the `v2/` folder to see what changed
-2. Open the `v2/retell_import_guide.md` for the updated instructions
-3. In the Retell UI, edit the existing agent and update only the changed fields
-4. Re-publish
-
----
-
-*Generated automatically by Clara AI Pipeline. For full setup instructions see `RETELL_SETUP.md`.*
-"""
-
-    with open(guide_path, "w", encoding="utf-8") as f:
-        f.write(guide)
+    print(f"  Agent spec ({version}) saved -> {output_path}")
 
 
 if __name__ == "__main__":

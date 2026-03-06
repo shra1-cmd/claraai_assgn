@@ -20,8 +20,7 @@ from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 
 from api.models import (
-    HealthResponse, AccountSummary, MemoResponse, AgentSpecResponse,
-    MockRetellAgentRequest, MockRetellAgentResponse, PipelineRunResponse
+    HealthResponse, AccountSummary, MemoResponse, AgentSpecResponse
 )
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
@@ -30,21 +29,10 @@ OUTPUTS_DIR = Path("outputs/accounts")
 LLM_MODE    = os.getenv("LLM_MODE", "groq").lower()
 VERSION     = "1.0.0"
 
-# In-memory store for mock Retell agents (resets on server restart)
-_mock_retell_agents: dict[str, dict] = {}
-
 app = FastAPI(
     title="Clara AI Pipeline API",
-    description=(
-        "Mock integration layer for the Clara AI voice agent pipeline.\n\n"
-        "Use this to inspect pipeline outputs, trigger runs, and simulate "
-        "Retell agent creation — without needing Retell API access.\n\n"
-        "**LLM Backend:** `" + LLM_MODE + "` "
-        "(`LLM_MODE=groq` for Groq API, `LLM_MODE=local` for flan-t5-base offline)"
-    ),
+    description="Minimal API to inspect generated account memos and agent specs.",
     version=VERSION,
-    contact={"name": "Clara AI Pipeline", "url": "https://github.com/shra1-cmd/claraai_assgn"},
-    license_info={"name": "MIT"}
 )
 
 app.add_middleware(
@@ -192,112 +180,4 @@ def get_changelog(account_id: str):
     return _read_text(d / "v2" / "changes.md")
 
 
-# ── Pipeline ──────────────────────────────────────────────────────────────────
-
-@app.post(
-    "/pipeline/run",
-    response_model=PipelineRunResponse,
-    summary="Trigger Full Pipeline",
-    tags=["Pipeline"]
-)
-def run_pipeline():
-    """
-    Triggers a full pipeline run in the background (non-blocking).
-    The pipeline will process all transcripts in outputs/transcripts/
-    and regenerate all account outputs.
-
-    Note: The pipeline runs asynchronously. Check the server logs for progress.
-    """
-    try:
-        python = sys.executable
-        subprocess.Popen(
-            [python, "scripts/run_pipeline.py"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        return PipelineRunResponse(
-            status="started",
-            message="Pipeline is running in the background. Check server logs for progress."
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start pipeline: {e}")
-
-
-# ── Mock Retell API ───────────────────────────────────────────────────────────
-
-@app.post(
-    "/retell/agent",
-    response_model=MockRetellAgentResponse,
-    summary="Mock: Create Retell Agent",
-    tags=["Mock Retell API"]
-)
-def mock_create_agent(request: MockRetellAgentRequest):
-    """
-    **Mock endpoint** simulating `POST https://api.retellai.com/v2/create-agent`.
-
-    Accepts an agent spec and returns a synthetic agent_id.
-    Use this to verify the agent spec structure before going live with Retell.
-
-    In production, replace this with a real Retell API call using your API key.
-    """
-    agent_id = f"mock-agent-{str(uuid.uuid4())[:8]}"
-    _mock_retell_agents[agent_id] = {
-        "agent_id":   agent_id,
-        "agent_name": request.agent_name,
-        "version":    request.version,
-        "voice_style": request.voice_style,
-        "prompt_length": len(request.system_prompt),
-    }
-    return MockRetellAgentResponse(
-        agent_id=agent_id,
-        agent_name=request.agent_name,
-        status="created",
-        voice_id="11labs-rachel",
-        language="en-US",
-        webhook_url=None,
-        note=(
-            "This is a MOCK response. The agent was not created in Retell. "
-            "To create a real agent, use your Retell API key and follow RETELL_SETUP.md."
-        )
-    )
-
-
-@app.get(
-    "/retell/agents",
-    summary="Mock: List All Retell Agents",
-    tags=["Mock Retell API"]
-)
-def mock_list_agents():
-    """
-    **Mock endpoint** simulating `GET https://api.retellai.com/v2/list-agents`.
-
-    Returns all agents created via `POST /retell/agent` in this session.
-    Also includes agents derived from pipeline outputs (read from disk).
-    """
-    # Agents created via mock API in this session
-    session_agents = list(_mock_retell_agents.values())
-
-    # Agents derived from pipeline outputs
-    disk_agents = []
-    if OUTPUTS_DIR.exists():
-        for acc_dir in sorted(OUTPUTS_DIR.iterdir()):
-            if not acc_dir.is_dir():
-                continue
-            for version in ("v1", "v2"):
-                spec_path = acc_dir / version / "agent_spec.json"
-                if spec_path.exists():
-                    with open(spec_path, encoding="utf-8") as f:
-                        spec = json.load(f)
-                    disk_agents.append({
-                        "source":     "pipeline_output",
-                        "account_id": acc_dir.name,
-                        "version":    version,
-                        "agent_name": spec.get("agent_name"),
-                        "voice_style": spec.get("voice_style"),
-                    })
-
-    return {
-        "mock_session_agents": session_agents,
-        "pipeline_output_agents": disk_agents,
-        "total": len(session_agents) + len(disk_agents)
-    }
+# End of file

@@ -1,0 +1,15 @@
+[Agent]: “Thank you for calling City Plumbing Services. How can I help?”
+[Caller]: “Hi, wanted to get an understanding of your hours and services.”
+[Agent]: “Sure! We’re open Monday to Saturday, 7:00 AM to 6:00 PM Central Time.”
+[Caller]: “Thanks. What services do you provide?”
+[Agent]: “We do pipe repairs, water heater installations, drain cleaning, and 24/7 emergency plumbing.”
+[Caller]: “Speaking of emergencies, what’s considered one?”
+[Agent]: “A burst pipe or major flooding. We have an on-call emergency dispatch team we transfer those to.”
+[Caller]: “What about non-emergencies?”
+[Agent]: “For everything else, we collect your name, phone number, and address, then schedule a dispatch.”
+[Caller]: “And if I call after hours?”
+[Agent]: “After hours, we only handle active emergencies. Everything else is recorded and scheduled the next day.”
+[Caller]: “Any weird rules I should know about?”
+[Agent]: “Just that we can’t schedule emergency appointments online, only via phone.”
+[Caller]: “Got it. Thanks!”
+[Agent]: “Have a great day.”

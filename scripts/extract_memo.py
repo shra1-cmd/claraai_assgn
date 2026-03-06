@@ -3,14 +3,15 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=False)
 
 LLM_MODE = os.getenv("LLM_MODE", "groq").lower()  # "groq" or "local"
 
 # ── Groq setup (only imported when needed) ────────────────────────────────────
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 if LLM_MODE == "groq":
     from groq import Groq, RateLimitError
-    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
     _groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 EXTRACTION_PROMPT = """
@@ -87,5 +88,5 @@ def extract_memo(transcript_path: str, output_path: str, account_id: str) -> dic
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(memo, f, indent=2)
 
-    print(f"  Memo saved → {output_path}")
+    print(f"  Memo saved -> {output_path}")
     return memo

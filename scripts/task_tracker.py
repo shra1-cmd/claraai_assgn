@@ -51,7 +51,7 @@ def create_asana_task(account_name: str, notes: str) -> str | None:
                 timeout=10
             )
             task_url = f"https://app.asana.com/0/{PROJECT_GID}/{task_gid}"
-            print(f"  Asana task created for '{account_name}' → {task_url}")
+            print(f"  Asana task created for '{account_name}' -> {task_url}")
             return task_gid
 
         print(f"  Asana: task creation failed ({response.status_code}) — {response.text[:120]}")

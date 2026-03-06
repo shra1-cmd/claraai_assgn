@@ -4,8 +4,8 @@ __pycache__/
 *.pyc
 
 # Generated outputs — re-created by running the pipeline
-outputs/transcripts/
-outputs/accounts/
+# outputs/transcripts/
+# outputs/accounts/
 
 # Raw audio/recording files — users supply these locally
 *.mp3
@@ -13,3 +13,5 @@ outputs/accounts/
 *.m4a
 *.ogg
 *.flac
+# scripts/reset_pipeline.py
+compare_models.py

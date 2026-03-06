@@ -1,24 +1,59 @@
 {
-  "name": "Clara AI — Demo & Onboarding Pipeline",
   "nodes": [
     {
       "parameters": {},
-      "id": "trigger-node",
-      "name": "Manual Trigger",
+      "id": "6930e02b-c981-4550-8bf8-5992f1fd7362",
+      "name": "Manual Trigger (Run Backlog)",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        320,
+        928
+      ]
     },
     {
       "parameters": {
-        "command": "cd /app && python scripts/run_pipeline.py 2>&1"
+        "command": "venv\\Scripts\\python.exe scripts\\run_pipeline.py --llm local 2>&1"
       },
-      "id": "run-pipeline",
-      "name": "Run Pipeline (All Accounts)",
+      "id": "b67d23c9-50b0-416b-856a-35dd83ce8a9e",
+      "name": "Process All Backlog",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
-      "position": [480, 300],
-      "notes": "Runs run_pipeline.py which reads from dataset/demo_calls and dataset/onboarding_calls, produces v1 and v2 outputs, creates Asana tasks, and stores JSON under outputs/accounts/<account_id>/"
+      "position": [
+        576,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "triggerOn": "folder",
+        "events": [
+          "add",
+          "change"
+        ],
+        "options": {}
+      },
+      "id": "3ee34bc7-92fa-4932-a717-7799f40e09e9",
+      "name": "New Transcript Arrival (File Watcher)",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cmd /c \"set LLM_MODE=local && venv\\Scripts\\python.exe scripts\\run_pipeline.py --file \\\"{{ $json.path }}\\\" 2>&1\""
+      },
+      "id": "e1a5c352-f685-4cf4-895d-142cc010e551",
+      "name": "Process Transcript",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        560,
+        1232
+      ]
     },
     {
       "parameters": {
@@ -27,16 +62,19 @@
             {
               "value1": "={{ $json.stdout }}",
               "operation": "contains",
-              "value2": "❌"
+              "value2": "[ERROR]"
             }
           ]
         }
       },
-      "id": "check-errors",
+      "id": "e5e560ca-5f46-4ed5-a8b7-a1cb203c7b11",
       "name": "Check for Errors",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [740, 300]
+      "position": [
+        832,
+        1232
+      ]
     },
     {
       "parameters": {
@@ -52,14 +90,17 @@
               "value": "={{ $json.stdout }}"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "failure-branch",
+      "id": "87c86407-286e-4bf0-88a2-209b99afa319",
       "name": "Log Failure",
       "type": "n8n-nodes-base.set",
       "typeVersion": 1,
-      "position": [1000, 200],
-      "notes": "In production: route this to Slack, email, or a monitoring webhook."
+      "position": [
+        1088,
+        1136
+      ]
     },
     {
       "parameters": {
@@ -71,33 +112,47 @@
               "value": "SUCCESS"
             },
             {
-              "name": "output",
-              "value": "={{ $json.stdout }}"
+              "name": "file",
+              "value": "={{ $('New Transcript Arrival (File Watcher)').item.json.path }}.processed"
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "success-branch",
+      "id": "eadb2fe5-1c52-4df1-aba2-d43f7861dd7b",
       "name": "Log Success",
       "type": "n8n-nodes-base.set",
       "typeVersion": 1,
-      "position": [1000, 420],
-      "notes": "Pipeline completed. Outputs stored in outputs/accounts/. Asana tasks created for flagged unknowns."
+      "position": [
+        1088,
+        1344
+      ]
     }
   ],
   "connections": {
-    "Manual Trigger": {
+    "Manual Trigger (Run Backlog)": {
       "main": [
         [
           {
-            "node": "Run Pipeline (All Accounts)",
+            "node": "Process All Backlog",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Run Pipeline (All Accounts)": {
+    "New Transcript Arrival (File Watcher)": {
+      "main": [
+        [
+          {
+            "node": "Process Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Transcript": {
       "main": [
         [
           {
@@ -127,10 +182,8 @@
       ]
     }
   },
+  "pinData": {},
   "meta": {
-    "instanceId": "clara-ai-pipeline-v1"
-  },
-  "settings": {
-    "notes": "Import this into n8n (self-hosted via Docker). The Execute Command node requires Python and project dependencies installed in the n8n environment. Set GROQ_API_KEY and ASANA_PAT as n8n environment variables or pass via .env file mounted into the container."
+    "instanceId": "a778af372436d7833d67d6b27b05303560f2c998663a8db08fe03fdddf7d7901"
   }
 }

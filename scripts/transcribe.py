@@ -3,8 +3,8 @@ transcribe.py — Ingest step for the Clara AI pipeline.
 
 Responsibilities:
   1. Scan dataset/demo_calls/ and dataset/onboarding_calls/ for audio or text files.
-  2. Audio files (.mp3, .wav, .m4a, .ogg) → run through local Whisper → save .txt to outputs/transcripts/
-  3. Pre-transcribed text files (.txt) → copy directly to outputs/transcripts/
+  2. Audio files (.mp3, .wav, .m4a, .ogg) -> run through local Whisper -> save .txt to outputs/transcripts/
+  3. Pre-transcribed text files (.txt) -> copy directly to outputs/transcripts/
   4. Return the list of transcript paths so the pipeline can proceed.
 
 Whisper model: 'base' — fast and accurate enough for call audio.
@@ -47,8 +47,8 @@ SKIP_FILENAMES = {"readme.txt", "readme.md", ".gitkeep"}  # files to never treat
 def _ingest_folder(source_dir: Path, prefix: str) -> list[Path]:
     """
     Ingest all data files from source_dir.
-    - .txt  (non-readme) → copy to outputs/transcripts/<prefix><N>.txt
-    - audio → transcribe  → save to outputs/transcripts/<prefix><N>.txt
+    - .txt  (non-readme) -> copy to outputs/transcripts/<prefix><N>.txt
+    - audio -> transcribe  -> save to outputs/transcripts/<prefix><N>.txt
     If no data files found in source_dir, falls back to any existing
     outputs/transcripts/<prefix>*.txt files from a previous run.
     Returns list of transcript paths in sorted order.
@@ -64,28 +64,35 @@ def _ingest_folder(source_dir: Path, prefix: str) -> list[Path]:
 
     # Fallback: if dataset/ is empty, use pre-existing transcripts
     if not files:
-        existing = sorted(TRANSCRIPT_DIR.glob(f"{prefix}*.txt"))
+        sub_folder = "demo_calls" if prefix == "demo" else "onboarding_calls"
+        dest_dir = TRANSCRIPT_DIR / sub_folder
+        existing = sorted(dest_dir.glob(f"{prefix}*.txt"))
         if existing:
-            print(f"  No source files in {source_dir} — using {len(existing)} existing transcript(s) from outputs/transcripts/")
+            print(f"  No source files in {source_dir} — using {len(existing)} existing transcript(s) from {dest_dir}")
             return existing
         print(f"  No files found in {source_dir} and no existing transcripts.")
         return []
 
     transcript_paths = []
     for i, src in enumerate(files, start=1):
-        dest = TRANSCRIPT_DIR / f"{prefix}{i}.txt"
+        # Determine subfolder based on prefix
+        sub_folder = "demo_calls" if prefix == "demo" else "onboarding_calls"
+        dest_dir = TRANSCRIPT_DIR / sub_folder
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        
+        dest = dest_dir / f"{prefix}{i}.txt"
         ext  = src.suffix.lower()
 
         if ext == ".txt":
             shutil.copy2(src, dest)
-            print(f"  Copied  {src.name} → {dest.name}")
+            print(f"  Copied  {src.name} -> {dest.name}")
 
         elif ext in AUDIO_EXTS:
             print(f"  Transcribing {src.name} via Whisper...")
             model  = _get_whisper()
             result = model.transcribe(str(src))
             dest.write_text(result["text"], encoding="utf-8")
-            print(f"  Saved   transcript → {dest.name}")
+            print(f"  Saved   transcript -> {dest.name}")
 
         else:
             print(f"  Skipped {src.name} (unsupported format)")

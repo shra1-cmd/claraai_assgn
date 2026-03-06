@@ -1,0 +1,17 @@
+[Agent]: “Thank you for calling Reliable Roofers. How can I assist you?”
+[Caller]: “Hi, I need info about your business hours.”
+[Agent]: “We’re open Monday, Wednesday, and Friday from 9:00 AM to 4:00 PM Pacific Time.”
+[Caller]: “And what do you guys do?”
+[Agent]: “Roof inspections, leak repairs, gutter cleaning, and emergency tarping.”
+[Caller]: “What qualifies as an emergency?”
+[Agent]: “A collapsed roof or a major leak during a storm.”
+[Caller]: “How are non-emergencies handled?”
+[Agent]: “We take your details and schedule an estimator to come out within a week.”
+[Caller]: “And emergencies?”
+[Agent]: “We collect your info and immediately connect you to our emergency crew foreman.”
+[Caller]: “What happens after hours?”
+[Agent]: “After hours, we take a message for non-emergencies. We don’t have after-hours emergency dispatch yet.”
+[Caller]: “Are there any system constraints?”
+[Agent]: “Yes, we don’t do commercial buildings, only residential.”
+[Caller]: “Thank you!”
+[Agent]: “You’re very welcome.”

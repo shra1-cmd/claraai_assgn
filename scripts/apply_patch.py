@@ -3,13 +3,14 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=False)
 
 LLM_MODE = os.getenv("LLM_MODE", "groq").lower()  # "groq" or "local"
 
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 if LLM_MODE == "groq":
     from groq import Groq, RateLimitError
-    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
     _groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 PATCH_PROMPT = """
@@ -83,7 +84,7 @@ def apply_patch(v1_path: str, transcript_path: str, account_id: str) -> dict:
         json.dump(memo_v2, f, indent=2)
 
     # ── Human-readable changelog (changes.md) ────────────────────────────────
-    changelog_lines = [f"# Changelog — {account_id} (v1 → v2)\n"]
+    changelog_lines = [f"# Changelog — {account_id} (v1 -> v2)\n"]
     for key, new_val in updates.items():
         old_val = memo_v1.get(key)
         changelog_lines.append(f"**{key}**\n- Before: {old_val}\n- After:  {new_val}\n")
@@ -91,15 +92,5 @@ def apply_patch(v1_path: str, transcript_path: str, account_id: str) -> dict:
     with open(v2_dir / "changes.md", "w", encoding="utf-8") as f:
         f.write("\n".join(changelog_lines))
 
-    # ── Structured diff (deepdiff.json) — used by Streamlit dashboard ────────
-    try:
-        from deepdiff import DeepDiff
-        diff = DeepDiff(memo_v1, memo_v2, ignore_order=True)
-        diff_data = json.loads(diff.to_json()) if diff else {}
-        with open(v2_dir / "deepdiff.json", "w", encoding="utf-8") as f:
-            json.dump(diff_data, f, indent=2)
-    except ImportError:
-        pass  # deepdiff is optional — dashboard falls back to manual comparison
-
-    print(f"  Memo v2 and changelog saved → {v2_dir}")
+    print(f"  Memo v2 and changelog saved -> {v2_dir}")
     return memo_v2

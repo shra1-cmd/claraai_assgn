@@ -7,7 +7,7 @@ memo dict afterwards. Each question is short enough for the model to answer well
 
 Model is downloaded once (~250 MB) and cached at:
   Windows: C:/Users/<user>/.cache/huggingface/hub/
-  After first download → runs fully offline, no internet required.
+  After first download -> runs fully offline, no internet required.
 
 Set LLM_MODE=local in your .env to activate.
 Set LLM_MODE=groq (default) to use the Groq API instead.
@@ -34,22 +34,22 @@ def _load_model():
     return _model, _tokenizer
 
 
-def _ask(question: str, context: str) -> str:
-    """Ask a single targeted question about the transcript context."""
+def _ask_batch(questions: list[str], context: str) -> list[str]:
+    """Ask multiple targeted questions about the transcript context in a single batched inference."""
     model, tokenizer = _load_model()
 
     # Truncate context to fit model's 512-token limit
     ctx = context[:1500]
-    prompt = f"Question: {question}\n\nContext: {ctx}\n\nAnswer:"
+    
+    prompts = [f"Question: {q}\n\nContext: {ctx}\n\nAnswer:" for q in questions]
 
-    inputs  = tokenizer(prompt, return_tensors="pt", max_length=512, truncation=True)
+    inputs = tokenizer(prompts, return_tensors="pt", max_length=512, truncation=True, padding=True)
     outputs = model.generate(**inputs, max_new_tokens=100, num_beams=4, do_sample=False)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+    
+    return [tokenizer.decode(out, skip_special_tokens=True).strip() for out in outputs]
 
-
-def _ask_list(question: str, context: str) -> list[str]:
-    """Ask a question expected to return a comma-separated list."""
-    raw = _ask(question, context)
+def _parse_list(raw: str) -> list[str]:
+    """Helper to parse a comma-separated list from a raw string return."""
     if not raw or raw.lower() in ("none", "unknown", "n/a", "not mentioned"):
         return []
     return [item.strip() for item in raw.split(",") if item.strip()]
@@ -71,20 +71,39 @@ def extract_local(prompt: str) -> str:
 
     ctx = transcript  # alias for readability
 
-    company    = _ask("What is the official company name?", ctx)
-    address    = _ask("What is the full office address?", ctx)
-    days       = _ask_list("What days of the week are they open?", ctx)
-    start_time = _ask("What time does the office open?", ctx)
-    end_time   = _ask("What time does the office close?", ctx)
-    timezone   = _ask("What timezone are the business hours in?", ctx)
-    services   = _ask_list("What services does the company offer? List them.", ctx)
-    emerg_def  = _ask_list("What situations count as emergencies for this company?", ctx)
-    emerg_rout = _ask("How are emergency calls routed or handled?", ctx)
-    non_emerg  = _ask("How are non-emergency calls handled?", ctx)
-    after_hrs  = _ask("What happens when someone calls after business hours?", ctx)
-    during_hrs = _ask("What happens when someone calls during business hours?", ctx)
-    constraints = _ask("Are there any software or system constraints mentioned?", ctx)
-    notes      = _ask("Are there any other important notes or context?", ctx)
+    questions = [
+        "What is the official company name?",
+        "What is the full office address?",
+        "What days of the week are they open?",
+        "What time does the office open?",
+        "What time does the office close?",
+        "What timezone are the business hours in?",
+        "What services does the company offer? List them.",
+        "What situations count as emergencies for this company?",
+        "How are emergency calls routed or handled?",
+        "How are non-emergency calls handled?",
+        "What happens when someone calls after business hours?",
+        "What happens when someone calls during business hours?",
+        "Are there any software or system constraints mentioned?",
+        "Are there any other important notes or context?"
+    ]
+    
+    answers = _ask_batch(questions, ctx)
+
+    company     = answers[0]
+    address     = answers[1]
+    days        = _parse_list(answers[2])
+    start_time  = answers[3]
+    end_time    = answers[4]
+    timezone    = answers[5]
+    services    = _parse_list(answers[6])
+    emerg_def   = _parse_list(answers[7])
+    emerg_rout  = answers[8]
+    non_emerg   = answers[9]
+    after_hrs   = answers[10]
+    during_hrs  = answers[11]
+    constraints = answers[12]
+    notes       = answers[13]
 
     memo = {
         "account_id": None,
@@ -137,4 +156,4 @@ if __name__ == "__main__":
     print(f"  business_hours: {data.get('business_hours')}")
     print(f"  services      : {data.get('services_supported')}")
     print(f"  emergencies   : {data.get('emergency_definition')}")
-    print("\n✅ Local extraction complete!")
+    print("\n[SUCCESS] Local extraction complete!")
