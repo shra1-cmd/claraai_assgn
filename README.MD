@@ -34,7 +34,7 @@ Dashboard UI:
 streamlit run dashboard.py
 
 API Explorer:
-python run_api.py (visit http://localhost:8000/docs)
+uvicorn api.main:app --reload (visit http://localhost:8000/docs)
 
 ## Outputs
 
